@@ -1,32 +1,57 @@
 import cv2
-import numpy as np
+import os
 
-folder_list = ['I', 'II']
-labelfile = 'label.txt'
+folderList = ['I', 'II']
 
-def loadLabel(folders):
-    for folder in folders:
-        file_name = './data/' + folder + '/' + labelfile
-        with open(file_name) as f:
+def removeInvalidImg(srcImgList):
+    resList= []
+    for item in srcImgList:
+        picDir = item.split()[0]
+        if os.path.isfile(picDir):
+            resList.append(item)
+    return resList
+
+def loadMetaDataList():
+    tmpList = []
+    for folderName in folderList:
+        picFileDir = os.path.join('data',folderName)
+        labelFileDir = os.path.join(picFileDir, 'label.txt')
+        with open(labelFileDir) as f:
             lines = f.readlines()
-            for line in lines:
-                keyPointList = []
-                print(line.split(' ')[0])
-                filename = line.split(' ')[0]
-                x1, y1 = line.split(' ')[1], line.split(' ')[2]
-                x2, y2 = line.split(' ')[3], line.split(' ')[4]
-                for item in line.split(' ')[5:]:
-                    keyPointList.append(int(float(item)))
-                keyPointList = np.array(keyPointList)
-                keyPointList = np.array(keyPointList).reshape(21, 2)
-                #print(keyPointList)
+        tmpList.extend(list(map((picFileDir + '\\').__add__, lines)))
+    resLines = removeInvalidImg(tmpList)
+    return resLines
 
-                image = cv2.imread('./data/' + folder + '/' + filename)
-                cv2.rectangle(image, (int(float(x1)), int(float(y1))), (int(float(x2)), int(float(y2))), (0, 255, 0), 2)
-                for point in keyPointList:
-                    cv2.circle(image, (point[0], point[1]), 1, (0, 0, 255), 1) # point_size,point_color,thickness
-                cv2.imshow('result.jpg',image)
-                cv2.waitKey(0)
-                cv2.destroyAllWindows()
+def loadRectLandMarks(metaDataList):
+    truth = {}
+    for line in metaDataList:
+        line = line.strip().split()
+        imgDir = line[0]
+        if imgDir not in truth:
+            truth[imgDir] = []
+        rect = list(map(int, list(map(float, line[1:5]))))
+        x = list(map(int,list(map(float, line[5::2]))))
+        y = list(map(int,list(map(float, line[6::2]))))
+        landMarks = list(zip(x, y))
+        truth[imgDir].append((rect, landMarks))
+    return truth
 
-loadLabel(folder_list)
+# truth = loadRectLandMarks(loadMetaDataList())
+# for i in truth:
+#     print(i, truth[i])
+
+def drawRectLandMarks(truth):
+    for line in truth:
+        imgData = cv2.imread(line)
+        for rect in truth[line]:
+            cv2.rectangle(imgData, (rect[0][0], rect[0][1]), (rect[0][2], rect[0][3]), (0, 255, 0), 3)
+            for landMark in rect[1]:
+                cv2.circle(imgData, (landMark[0], landMark[1]), 1, (0, 0, 255), 1)
+        cv2.imshow(line, imgData)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
+
+truth = loadRectLandMarks(loadMetaDataList())
+drawRectLandMarks(truth)
+
+
