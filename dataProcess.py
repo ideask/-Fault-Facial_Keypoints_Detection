@@ -18,10 +18,10 @@ def loadMetaDataList():
     tmpList = []
     for folderName in folderList:
         picFileDir = os.path.join('data',folderName)
-        labelFileDir = os.path.join(folderName, 'label.txt')
+        labelFileDir = os.path.join(picFileDir, 'label.txt')
         with open(labelFileDir) as f:
             lines = f.readlines()
-        tmpList.extend(list(map((picFileDir + '/').__add__, lines)))
+        tmpList.extend(list(map((picFileDir + '\\').__add__, lines)))
     resLines = removeInvalidImg(tmpList)
     return resLines
 
@@ -135,30 +135,30 @@ def createExpandRoiTxt(metaDataList, ratio, scale): # scale为训练数据所占
         for wl in write_lines[trainNums:]:
             wf.write(wl)
 
-createExpandRoiTxt(loadMetaDataList(), 0.25, 0.9)
+#createExpandRoiTxt(loadMetaDataList(), 0.25, 0.9)
 
-def testTrainTestTxt(filename):
-    truth = {}
-    with open(filename) as f:
-        lines = f.readlines()
-    for line in lines:
-        line = line.strip().split()
-        imgDir = line[0]
-        if imgDir not in truth:
-            truth[imgDir] = []
-        rect = list(map(int, list(map(float, line[1:5]))))
-        x = list(map(int, list(map(float, line[5::2]))))
-        y = list(map(int, list(map(float, line[6::2]))))
-        landMarks = list(zip(x, y))
-        truth[imgDir].append((rect, landMarks))
-    for line in truth:
-        imgData = cv2.imread(line)
-        for rect in truth[line]:
-            cv2.rectangle(imgData, (rect[0][0], rect[0][1]), (rect[0][2], rect[0][3]), (0, 255, 0), 3)
-            for landMark in rect[1]:
-                cv2.circle(imgData, (landMark[0] + rect[0][0], landMark[1] + rect[0][1]), 1, (0, 0, 255), 1)
-        cv2.imshow(line, imgData)
-        cv2.waitKey(0)
-        cv2.destroyAllWindows()
-
-testTrainTestTxt('train.txt')
+# def testTrainTestTxt(filename):
+#     truth = {}
+#     with open(filename) as f:
+#         lines = f.readlines()
+#     for line in lines:
+#         line = line.strip().split()
+#         imgDir = line[0]
+#         if imgDir not in truth:
+#             truth[imgDir] = []
+#         rect = list(map(int, list(map(float, line[1:5]))))
+#         x = list(map(int, list(map(float, line[5::2]))))
+#         y = list(map(int, list(map(float, line[6::2]))))
+#         landMarks = list(zip(x, y))
+#         truth[imgDir].append((rect, landMarks))
+#     for line in truth:
+#         imgData = cv2.imread(line)
+#         for rect in truth[line]:
+#             cv2.rectangle(imgData, (rect[0][0], rect[0][1]), (rect[0][2], rect[0][3]), (0, 255, 0), 3)
+#             for landMark in rect[1]:
+#                 cv2.circle(imgData, (landMark[0] + rect[0][0], landMark[1] + rect[0][1]), 1, (0, 0, 255), 1)
+#         cv2.imshow(line, imgData)
+#         cv2.waitKey(0)
+#         cv2.destroyAllWindows()
+#
+# testTrainTestTxt('train.txt')
