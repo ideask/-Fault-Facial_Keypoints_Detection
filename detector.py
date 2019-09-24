@@ -4,6 +4,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
+from torch.optim import lr_scheduler
 from torch.utils.data.sampler import SubsetRandomSampler
 from torchvision import datasets, transforms
 
@@ -87,7 +88,7 @@ class Net(nn.Module):
         return ip3
 
 
-def train(args, train_loader, valid_loader, model, criterion, optimizer, device):
+def train(args, train_loader, valid_loader, model, criterion, optimizer, device, scheduler):
 
     # save model
     if args.save_model:
@@ -107,6 +108,9 @@ def train(args, train_loader, valid_loader, model, criterion, optimizer, device)
         ######################
         # training the model #
         ######################
+        scheduler.step()
+        lr = scheduler.get_lr()
+        print('lr:{}\n'.format(lr))
         model.train()
         for batch_idx, batch in enumerate(train_loader):
             img = batch['image']
@@ -169,10 +173,10 @@ def train(args, train_loader, valid_loader, model, criterion, optimizer, device)
 
 def main_test():
     parser = argparse.ArgumentParser(description='Detector')
-    parser.add_argument('--batch-size', type=int, default=64, metavar='N',				
-                        help='input batch size for training (default: 64)')
-    parser.add_argument('--test-batch-size', type=int, default=64, metavar='N',		
-                        help='input batch size for testing (default: 64)')
+    parser.add_argument('--batch-size', type=int, default=32, metavar='N',
+                        help='input batch size for training (default: 32)')
+    parser.add_argument('--test-batch-size', type=int, default=32, metavar='N',
+                        help='input batch size for testing (default: 32)')
     parser.add_argument('--epochs', type=int, default=100, metavar='N',
                         help='number of epochs to train (default: 100)')
     parser.add_argument('--lr', type=float, default=0.001, metavar='LR',
@@ -209,13 +213,16 @@ def main_test():
     # For single GPU
     model = Net().to(device)
     ####################################################################
-    criterion_pts = nn.MSELoss()
-    optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum)
+    # criterion_pts = nn.MSELoss()
+    criterion_pts = nn.SmoothL1Loss()
+    # optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum)
+    optimizer = optim.Adam(model.parameters(), lr=args.lr, betas=(0.5, 0.8))
+    exp_lr_scheduler = lr_scheduler.StepLR(optimizer, step_size=3, gamma=0.1)
 	####################################################################
     if args.phase == 'Train' or args.phase == 'train':
         print('===> Start Training')
         train_losses, valid_losses = \
-			train(args, train_loader, valid_loader, model, criterion_pts, optimizer, device)
+			train(args, train_loader, valid_loader, model, criterion_pts, optimizer, device, exp_lr_scheduler)
         print('====================================================')
     elif args.phase == 'Test' or args.phase == 'test':
         print('===> Test')
