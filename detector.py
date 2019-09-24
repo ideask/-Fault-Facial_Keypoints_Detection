@@ -171,6 +171,32 @@ def train(args, train_loader, valid_loader, model, criterion, optimizer, device,
             torch.save(model.state_dict(), saved_model_name)
     return loss, 0.5
 
+def predict(model, ckpt, device, predict_loader):
+    model.load_state_dict(torch.load(ckpt))
+    model.eval()
+    with torch.no_grad():
+        predict_batch_cnt = 0
+
+        for valid_batch_idx, batch in enumerate(predict_loader):
+            predict_batch_cnt += 1
+            valid_img = batch['image']
+            input_img = valid_img.to(device)
+            output_pts = model(input_img)
+            print(output_pts.shape)
+            output_np = output_pts.cpu().numpy()
+            print(output_np.shape)
+            count = 0
+            for img in valid_img:
+                img = img.numpy()
+                img = np.squeeze(img)
+                img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
+                tmp_arr = output_np[count].reshape(21, 2)
+                for keypoint in tmp_arr:
+                    cv2.circle(img, (keypoint[0], keypoint[1]), 1, (0, 0, 255), 1)
+                cv2.imshow('result', img)
+                cv2.waitKey()
+                cv2.destroyAllWindows()
+
 def main_test():
     parser = argparse.ArgumentParser(description='Detector')
     parser.add_argument('--batch-size', type=int, default=32, metavar='N',
@@ -232,6 +258,7 @@ def main_test():
         # how to do finetune?
     elif args.phase == 'Predict' or args.phase == 'predict':
         print('===> Predict')
+        predict(model, './trained_models/detector_epoch_5.pt', device, valid_loader)
         # how to do predict?
 
 
