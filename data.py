@@ -9,7 +9,7 @@ import itertools
 
 
 folder_list = ['I', 'II']
-train_boarder = 112
+train_boarder = 224
 
 
 def channel_norm(img):
@@ -54,8 +54,8 @@ class ToTensor(object):
         # swap color axis because
         # numpy image: H x W x C
         # torch image: C X H X W
-        # image = image.transpose((2, 0, 1))
-        image = np.expand_dims(image, axis=0)
+        image = image.transpose((2, 0, 1))
+        # image = np.expand_dims(image, axis=0)
         return {'image': torch.from_numpy(image),
                 'landmarks': torch.from_numpy(landmarks)}
 
@@ -77,10 +77,11 @@ class FaceLandmarksDataset(Dataset):
     def __getitem__(self, idx):
         img_name, rect, landmarks = parse_line(self.lines[idx])
         # image
-        img = Image.open(img_name).convert('L')
+        img = Image.open(img_name).convert('RGB')
         img_crop = img.crop(tuple(rect))            
         landmarks = np.array(landmarks).astype(np.float32)
-        (img_height, img_width) = np.array(img_crop).shape
+        # print(np.array(img_crop).shape)
+        (img_height, img_width, img_channel) = np.array(img_crop).shape
         # print('img_height:{}, img_width:{}'.format(img_height,img_width))
         img_width_ratio = train_boarder / img_width
         img_height_ratio = train_boarder / img_height
